@@ -100,19 +100,21 @@ export function ChatPanel({ applicationId, applicantName, staff = false }: { app
 
     <div className="h-[460px] overflow-y-auto bg-[#EAF1F5] px-4 py-5 sm:px-6">
       {loading ? <div className="py-12 text-center text-sm text-slate-500">Opening chat…</div> : messages.length ? messages.map(m => {
-        // The current user's sender_id is the source of truth for "You".
-        // The other participant is always the opposite side of this 1:1 chat.
-        const mine = Boolean(userId) && m.sender_id === userId
-        const alignLeft = !mine
-        const label = mine ? 'You' : (staff ? 'Applicant' : 'Agent')
-        return <div key={m.id} className={`mb-3 flex w-full ${alignLeft ? 'justify-start' : 'justify-end'}`}>
-          <div className={`max-w-[78%] sm:max-w-[68%] ${alignLeft ? 'items-start' : 'items-end'} flex flex-col`}>
-            <div className={`mb-1 px-1 text-[10px] font-bold uppercase tracking-wide ${alignLeft ? 'text-[#005EA8]' : 'text-slate-500'}`}>{label}</div>
-            <div className={`rounded-2xl px-4 py-3 text-sm leading-6 shadow-sm ${alignLeft ? 'rounded-tl-sm border border-slate-200 bg-white text-[#12304A]' : 'rounded-tr-sm bg-[#D9FDD3] text-[#12304A]'}`}>
+        // This is a two-party conversation, so alignment is based on the participant
+        // role rather than the current browser session. Staff is always on the left;
+        // the applicant is always on the right. This keeps the conversation consistent
+        // between the applicant view and the agent/admin view.
+        const isApplicantMessage = m.sender_role === 'applicant'
+        const alignRight = isApplicantMessage
+        const label = staff ? (isApplicantMessage ? 'Applicant' : 'Agent') : (isApplicantMessage ? 'You' : 'Agent')
+        return <div key={m.id} className={`mb-3 flex w-full ${alignRight ? 'justify-end' : 'justify-start'}`}>
+          <div className={`max-w-[78%] sm:max-w-[68%] ${alignRight ? 'items-end' : 'items-start'} flex flex-col`}>
+            <div className={`mb-1 px-1 text-[10px] font-bold uppercase tracking-wide ${alignRight ? 'text-slate-500' : 'text-[#005EA8]'}`}>{label}</div>
+            <div className={`rounded-2xl px-4 py-3 text-sm leading-6 shadow-sm ${alignRight ? 'rounded-tr-sm bg-[#D9FDD3] text-[#12304A]' : 'rounded-tl-sm border border-slate-200 bg-white text-[#12304A]'}`}>
               <p className="whitespace-pre-wrap break-words">{m.message}</p>
-              <div className={`mt-1.5 flex items-center justify-end gap-1 text-[10px] ${alignLeft ? 'text-slate-400' : 'text-slate-500'}`}>
+              <div className={`mt-1.5 flex items-center justify-end gap-1 text-[10px] ${alignRight ? 'text-slate-500' : 'text-slate-400'}`}>
                 {new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                {mine && <Check size={12} className="text-[#005EA8]" />}
+                {((staff && !isApplicantMessage) || (!staff && isApplicantMessage)) && <Check size={12} className="text-[#005EA8]" />}
               </div>
             </div>
           </div>
