@@ -89,13 +89,6 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  if (pathname === '/apply' && !user) {
-    const url = request.nextUrl.clone()
-    url.pathname = '/login'
-    url.searchParams.set('next', '/apply')
-    return NextResponse.redirect(url)
-  }
-
   return response
 }
 
