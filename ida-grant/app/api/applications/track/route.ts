@@ -9,10 +9,22 @@ export async function POST(request: Request) {
   const supabase = await createClient()
   const { data, error } = await supabase
     .from('applications')
-    .select('id, application_number, full_name, email, status, created_at, updated_at')
+    .select('id, application_number, full_name, email, phone, address, age, city, state, postal_code, status, date_of_birth, occupation, monthly_income, reason, requested_amount, created_at, updated_at, grant_id, grants(title)')
     .ilike('email', email)
     .order('created_at', { ascending: false })
 
   if (error) return NextResponse.json({ error: 'Unable to look up applications.' }, { status: 400 })
-  return NextResponse.json({ applications: data ?? [] })
+
+  const applicantIds = [...new Set((data ?? []).map(app => (app as any).applicant_id).filter(Boolean))]
+  const { data: profiles } = applicantIds.length
+    ? await supabase.from('profiles').select('id, country').in('id', applicantIds)
+    : { data: [] as { id: string; country: string | null }[] }
+  const countries = new Map((profiles ?? []).map(p => [p.id, p.country]))
+
+  return NextResponse.json({
+    applications: (data ?? []).map(app => ({
+      ...app,
+      country: countries.get((app as any).applicant_id) || null,
+    })),
+  })
 }
