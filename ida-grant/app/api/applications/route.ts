@@ -6,13 +6,19 @@ export async function POST(request: Request) {
     const body = await request.json()
     const supabase = await createClient()
 
-    const { data: currentUser } = await supabase.auth.getUser()
-    if (!currentUser.user) {
-      const { error: anonymousError } = await supabase.auth.signInAnonymously()
-      if (anonymousError) {
-        console.error('Anonymous applicant session failed:', anonymousError)
-        return NextResponse.json({ error: 'Unable to start the applicant session. Please try again.' }, { status: 400 })
-      }
+    // /apply is a public applicant flow. Do not reuse a staff session that
+    // may be present in this browser, otherwise the database function sees
+    // the staff profile and incorrectly rejects the submission.
+    const { error: signOutError } = await supabase.auth.signOut()
+    if (signOutError) {
+      console.error('Unable to reset applicant session:', signOutError)
+      return NextResponse.json({ error: 'Unable to start the applicant session. Please try again.' }, { status: 400 })
+    }
+
+    const { error: anonymousError } = await supabase.auth.signInAnonymously()
+    if (anonymousError) {
+      console.error('Anonymous applicant session failed:', anonymousError)
+      return NextResponse.json({ error: 'Unable to start the applicant session. Please try again.' }, { status: 400 })
     }
 
     const { data, error } = await supabase.rpc('submit_public_application', {
