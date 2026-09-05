@@ -1,0 +1,12 @@
+'use client'
+
+import { FormEvent, useState } from 'react'
+import Link from 'next/link'
+import { createClient } from '@/lib/supabase/client'
+
+export default function RegisterPage() {
+  const supabase = createClient()
+  const [name,setName]=useState(''); const [email,setEmail]=useState(''); const [password,setPassword]=useState(''); const [error,setError]=useState(''); const [done,setDone]=useState(false); const [loading,setLoading]=useState(false)
+  async function submit(e:FormEvent){e.preventDefault();setError('');setLoading(true);const {error}=await supabase.auth.signUp({email,password,options:{data:{full_name:name}}});if(error){setError(error.message);setLoading(false);return}setDone(true);setLoading(false)}
+  return <main className="min-h-screen bg-[#F4F7F9] px-4 py-12"><div className="mx-auto max-w-md"><Link href="/" className="text-sm font-bold text-[#005EA8]">← IDA World Support Grant</Link><div className="mt-8 rounded-2xl border border-[#D9E2E8] bg-white p-7 shadow-soft"><h1 className="text-2xl font-extrabold text-[#12304A]">Create applicant account</h1>{done?<div className="mt-6 rounded-lg bg-[#EAF1F5] p-4 text-sm text-[#12304A]">Check your email to confirm your account, then <Link href="/login" className="font-bold text-[#005EA8]">sign in</Link>.</div>:<form onSubmit={submit} className="mt-7 space-y-4"><label className="block text-sm font-semibold">Full name<input required value={name} onChange={e=>setName(e.target.value)} className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-3 text-sm" /></label><label className="block text-sm font-semibold">Email<input required type="email" value={email} onChange={e=>setEmail(e.target.value)} className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-3 text-sm" /></label><label className="block text-sm font-semibold">Password<input required minLength={8} type="password" value={password} onChange={e=>setPassword(e.target.value)} className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-3 text-sm" /></label>{error&&<div className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</div>}<button disabled={loading} className="w-full rounded-lg bg-[#005EA8] px-4 py-3 text-sm font-bold text-white">{loading?'Creating…':'Create account'}</button></form>}<p className="mt-5 text-xs text-slate-500">Already registered? <Link href="/login" className="font-bold text-[#005EA8]">Sign in</Link></p></div></div></main>
+}
