@@ -18,17 +18,29 @@ export async function proxy(request: NextRequest) {
     },
   )
 
-  const { data: { user } } = await supabase.auth.getUser()
   const host = (request.headers.get('x-forwarded-host') || request.headers.get('host'))?.split(':')[0]?.toLowerCase()
   const pathname = request.nextUrl.pathname
+  const isAgentHost = host === 'agent.idawsg.com'
+  const isAdminHost = host === 'admin.idawsg.com'
+
+  // Allow the shared login page to render on staff subdomains.
+  if ((isAgentHost || isAdminHost) && pathname === '/login') {
+    return response
+  }
+
+  const { data: { user } } = await supabase.auth.getUser()
   let role: string | null = null
 
   if (user) {
-    const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle()
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .maybeSingle()
     role = profile?.role || null
   }
 
-  if (host === 'agent.idawsg.com') {
+  if (isAgentHost) {
     if (!user) {
       const url = request.nextUrl.clone()
       url.pathname = '/login'
@@ -53,7 +65,7 @@ export async function proxy(request: NextRequest) {
     }
   }
 
-  if (host === 'admin.idawsg.com') {
+  if (isAdminHost) {
     if (!user) {
       const url = request.nextUrl.clone()
       url.pathname = '/login'
@@ -96,5 +108,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/dashboard/:path*', '/agent/:path*', '/admin/:path*', '/apply/:path*', '/'],
+  matcher: ['/:path*'],
 }
