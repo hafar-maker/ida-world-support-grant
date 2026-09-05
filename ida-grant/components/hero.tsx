@@ -6,7 +6,7 @@ import { ArrowRight, CirclePlay } from "lucide-react";
 import { useState } from "react";
 import { VideoModal } from "./video-modal";
 
-const LEARN_MORE_VIDEO_ID = "eay_PI7WXPk";
+const LEARN_MORE_VIDEO_ID = "HpGg232napQ";
 
 export function Hero() {
   const [videoOpen, setVideoOpen] = useState(false);
