@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { sendApplicationEmail } from '@/lib/application-email'
 
 const allowed = ['submitted','under_review','more_information','approved','declined','support_processing']
 
@@ -41,8 +42,24 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   if (body.status && !allowed.includes(body.status)) return NextResponse.json({ error: 'Invalid status' }, { status: 400 })
   const patch: Record<string, unknown> = {}
   for (const key of ['status','agent_notes','assigned_agent_id','decision_reason']) if (key in body) patch[key] = body[key]
+
+  const { data: before } = await supabase.from('applications').select('status,full_name,email,application_number').eq('id', id).maybeSingle()
   const { data, error } = await supabase.from('applications').update(patch).eq('id', id).select('*').single()
   if (error) return NextResponse.json({ error: error.message }, { status: 400 })
   await supabase.from('audit_logs').insert({ actor_id: user.id, action: 'application_updated', application_id: id, metadata: patch })
+
+  if (before && before.status !== data.status && ['approved','declined'].includes(data.status)) {
+    try {
+      await sendApplicationEmail({
+        to: data.email,
+        name: data.full_name,
+        applicationNumber: data.application_number,
+        status: data.status,
+      })
+    } catch (emailError) {
+      console.error('Application decision email failed:', emailError)
+    }
+  }
+
   return NextResponse.json(data)
 }
