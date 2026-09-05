@@ -1,7 +1,7 @@
 'use client'
 
 import { FormEvent, useEffect, useRef, useState } from 'react'
-import { Bell, BellOff, Check, MessageCircle, Send } from 'lucide-react'
+import { Bell, BellOff, Check, Send } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
 type ChatMessage = { id: string; message: string; sender_id: string | null; sender_role: 'applicant' | 'agent' | 'admin'; created_at: string }
@@ -99,12 +99,11 @@ export function ChatPanel({ applicationId, applicantName, staff = false }: { app
     </div>
 
     <div className="h-[460px] overflow-y-auto bg-[#EAF1F5] px-4 py-5 sm:px-6">
-      {loading ? <div className="py-12 text-center text-sm text-slate-500">Opening chat…</div> : messages.length ? messages.map((m, index) => {
+      {loading ? <div className="py-12 text-center text-sm text-slate-500">Opening chat…</div> : messages.length ? messages.map(m => {
         const mine = m.sender_id === userId
         const isAgentMessage = m.sender_role === 'agent' || m.sender_role === 'admin'
-        const agentOnLeft = staff ? isAgentMessage : !isAgentMessage
-        const alignLeft = agentOnLeft
-        const label = isAgentMessage ? 'Agent' : 'Applicant'
+        const alignLeft = staff ? isAgentMessage : !isAgentMessage
+        const label = staff ? (isAgentMessage ? 'Agent' : 'Applicant') : (mine ? 'You' : 'Agent')
         return <div key={m.id} className={`mb-3 flex w-full ${alignLeft ? 'justify-start' : 'justify-end'}`}>
           <div className={`max-w-[78%] sm:max-w-[68%] ${alignLeft ? 'items-start' : 'items-end'} flex flex-col`}>
             <div className={`mb-1 px-1 text-[10px] font-bold uppercase tracking-wide ${alignLeft ? 'text-[#005EA8]' : 'text-slate-500'}`}>{label}</div>
