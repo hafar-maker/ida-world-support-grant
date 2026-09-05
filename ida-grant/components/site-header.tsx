@@ -18,7 +18,7 @@ export function SiteHeader() {
           <span>IDA World Support Grant</span>
           <div className="flex items-center gap-4">
             <Link href="#contact" className="hover:underline">Help</Link>
-            <Link href="/login" className="hover:underline">My account</Link>
+            <Link href="/dashboard" className="hover:underline">My account</Link>
             <Link href="/login" className="font-semibold text-[#005ea8] hover:underline">Register / Login</Link>
           </div>
         </div>

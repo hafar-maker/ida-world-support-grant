@@ -1,12 +1,13 @@
 'use client'
 
 import { FormEvent, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 
 export default function LoginPage() {
   const router = useRouter()
+  const params = useSearchParams()
   const supabase = createClient()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -18,7 +19,24 @@ export default function LoginPage() {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) { setError(error.message); setLoading(false); return }
     const { data: profile } = await supabase.from('profiles').select('role').eq('id', data.user.id).single()
-    const destination = profile?.role === 'admin' ? '/admin' : profile?.role === 'agent' ? '/agent' : '/dashboard'
+    const role = profile?.role || 'applicant'
+    const requested = params.get('next') || ''
+    const host = window.location.hostname.toLowerCase()
+
+    if (host === 'agent.idawsg.com') {
+      if (role === 'agent' || role === 'admin') window.location.href = 'https://agent.idawsg.com'
+      else window.location.href = '/'
+      return
+    }
+    if (host === 'admin.idawsg.com') {
+      if (role === 'admin') window.location.href = 'https://admin.idawsg.com'
+      else window.location.href = '/'
+      return
+    }
+
+    const destination = requested.startsWith('/') && !requested.startsWith('//')
+      ? requested
+      : role === 'admin' ? '/admin' : role === 'agent' ? '/agent' : '/dashboard'
     router.replace(destination); router.refresh()
   }
 

@@ -76,6 +76,8 @@ create table if not exists public.awards (
   support_type text not null,
   amount numeric,
   currency text default 'NGN',
+  display_amount text,
+  delivery_status text not null default 'not_published',
   published boolean not null default false,
   created_at timestamptz not null default now()
 );
