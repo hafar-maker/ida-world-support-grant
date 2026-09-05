@@ -9,10 +9,24 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
   const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
+  if (!profile || !['applicant','agent','admin'].includes(profile.role)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+
   const { data, error } = await supabase.from('applications').select('*, grants(title)').eq('id', id).single()
   if (error) return NextResponse.json({ error: error.message }, { status: 404 })
-  if (profile?.role === 'applicant' && data.applicant_id !== user.id) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-  if (!profile || !['applicant','agent','admin'].includes(profile.role)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  if (profile.role === 'applicant' && data.applicant_id !== user.id) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+
+  if (profile.role === 'agent') {
+    return NextResponse.json({
+      id: data.id,
+      application_number: data.application_number,
+      applicant_id: data.applicant_id,
+      full_name: data.full_name,
+      email: data.email,
+      phone: data.phone,
+      country: data.applicant_id ? (await supabase.from('profiles').select('country').eq('id', data.applicant_id).maybeSingle()).data?.country : null,
+    })
+  }
+
   return NextResponse.json(data)
 }
 
