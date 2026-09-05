@@ -23,21 +23,13 @@ export async function proxy(request: NextRequest) {
   const isAgentHost = host === 'agent.idawsg.com'
   const isAdminHost = host === 'admin.idawsg.com'
 
-  // Allow the shared login page to render on staff subdomains.
-  if ((isAgentHost || isAdminHost) && pathname === '/login') {
-    return response
-  }
+  if ((isAgentHost || isAdminHost) && pathname === '/login') return response
 
   const { data: { user } } = await supabase.auth.getUser()
   let role: string | null = null
-
   if (user) {
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .maybeSingle()
-    role = profile?.role || null
+    const { data } = await supabase.rpc('get_my_role')
+    role = data || null
   }
 
   if (isAgentHost) {
@@ -107,6 +99,4 @@ export async function proxy(request: NextRequest) {
   return response
 }
 
-export const config = {
-  matcher: ['/:path*'],
-}
+export const config = { matcher: ['/:path*'] }
