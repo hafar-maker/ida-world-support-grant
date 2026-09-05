@@ -2,7 +2,6 @@
 
 import { FormEvent, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import Link from 'next/link'
 import { SiteHeader } from '@/components/site-header'
 import { GrantFooter } from '@/components/grant-footer'
 import { RecentAwards } from '@/components/recent-awards'
@@ -25,7 +24,6 @@ const fields = [
 
 export default function ApplyPage() {
   const router = useRouter()
-  const supabase = createClient()
   const [submitted, setSubmitted] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -34,6 +32,7 @@ export default function ApplyPage() {
   const [grantId, setGrantId] = useState('')
 
   useEffect(() => {
+    const supabase = createClient()
     const grant = new URLSearchParams(window.location.search).get('grant') || ''
     setGrantId(grant)
 
@@ -49,10 +48,10 @@ export default function ApplyPage() {
       }))
       setLoading(false)
     })
-  }, [router, supabase])
+  }, [router])
 
   function change(key: string, value: string) {
-    setForm((value) => ({ ...value, [key]: value }))
+    setForm((current) => ({ ...current, [key]: value }))
   }
 
   async function submit(event: FormEvent) {
