@@ -6,6 +6,15 @@ export async function POST(request: Request) {
     const body = await request.json()
     const supabase = await createClient()
 
+    const { data: currentUser } = await supabase.auth.getUser()
+    if (!currentUser.user) {
+      const { error: anonymousError } = await supabase.auth.signInAnonymously()
+      if (anonymousError) {
+        console.error('Anonymous applicant session failed:', anonymousError)
+        return NextResponse.json({ error: 'Unable to start the applicant session. Please try again.' }, { status: 400 })
+      }
+    }
+
     const { data, error } = await supabase.rpc('submit_public_application', {
       p: body,
     })
