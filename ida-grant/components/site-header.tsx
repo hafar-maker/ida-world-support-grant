@@ -3,10 +3,9 @@ import { ArrowRight, ChevronDown, Search } from "lucide-react";
 
 const nav = [
   ["Home", "/"],
-  ["Learn", "/learn"],
+  ["About", "/about"],
   ["Find a Grant", "/grants"],
   ["Applicants", "/apply"],
-  ["About", "/#about"],
   ["Help", "/#contact"],
 ];
 
@@ -30,7 +29,7 @@ export function SiteHeader() {
           <nav className="hidden flex-1 items-center justify-center gap-1 lg:flex" aria-label="Primary">
             {nav.map(([label, href]) => (
               <Link key={label} href={href} className="inline-flex items-center gap-1 rounded-md px-3 py-3 text-[13px] font-semibold text-[#27465a] hover:bg-[#f4f7f9] hover:text-[#005ea8]">
-                {label}{["Learn", "Find a Grant", "Applicants"].includes(label) && <ChevronDown size={13} />}
+                {label}{["Find a Grant", "Applicants"].includes(label) && <ChevronDown size={13} />}
               </Link>
             ))}
           </nav>
