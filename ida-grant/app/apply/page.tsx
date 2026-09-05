@@ -5,44 +5,12 @@ import geoClient from 'countrycitystatejson/client'
 import { SiteHeader } from '@/components/site-header'
 import { GrantFooter } from '@/components/grant-footer'
 import { RecentAwards } from '@/components/recent-awards'
+import { ChatPanel } from '@/components/chat-panel'
 
-const countryCodes: Record<string, string> = {
-  Canada: 'CA',
-  'United States': 'US',
-  Australia: 'AU',
-  'United Kingdom': 'GB',
-  France: 'FR',
-  Germany: 'DE',
-  Italy: 'IT',
-  Spain: 'ES',
-  Netherlands: 'NL',
-  Belgium: 'BE',
-  Ireland: 'IE',
-  Switzerland: 'CH',
-  Austria: 'AT',
-  Sweden: 'SE',
-  Norway: 'NO',
-  Denmark: 'DK',
-  Finland: 'FI',
-  Portugal: 'PT',
-  'New Zealand': 'NZ',
-}
-
+const countryCodes: Record<string, string> = { Canada: 'CA', 'United States': 'US', Australia: 'AU', 'United Kingdom': 'GB', France: 'FR', Germany: 'DE', Italy: 'IT', Spain: 'ES', Netherlands: 'NL', Belgium: 'BE', Ireland: 'IE', Switzerland: 'CH', Austria: 'AT', Sweden: 'SE', Norway: 'NO', Denmark: 'DK', Finland: 'FI', Portugal: 'PT', 'New Zealand': 'NZ' }
 const countries = Object.keys(countryCodes)
-const fields = [
-  ['full_name', 'Full name', 'text'],
-  ['address', 'House / Apt No.', 'text'],
-  ['age', 'Age', 'number'],
-  ['postal_code', 'ZIP / Postal code', 'text'],
-  ['status', 'Relationship status', 'text'],
-  ['email', 'Email address', 'email'],
-  ['phone', 'Text / phone number', 'tel'],
-  ['date_of_birth', 'Date of birth', 'date'],
-  ['occupation', 'Occupation', 'text'],
-  ['monthly_income', 'Monthly income', 'number'],
-]
-
-const supportAmounts = ['$30,000', '$85,000', '$120,000', '$170,000', '$300,000', '$500,000', '$650,000', '$800,000', '$1,000,000', '$1,400,000']
+const fields = [['full_name','Full name','text'],['address','House / Apt No.','text'],['age','Age','number'],['postal_code','ZIP / Postal code','text'],['status','Relationship status','text'],['email','Email address','email'],['phone','Text / phone number','tel'],['date_of_birth','Date of birth','date'],['occupation','Occupation','text'],['monthly_income','Monthly income','number']]
+const supportAmounts = ['$30,000','$85,000','$120,000','$170,000','$300,000','$500,000','$650,000','$800,000','$1,000,000','$1,400,000']
 
 export default function ApplyPage() {
   const [submitted, setSubmitted] = useState(false)
@@ -50,196 +18,32 @@ export default function ApplyPage() {
   const [error, setError] = useState('')
   const [addressError, setAddressError] = useState('')
   const [locationsLoading, setLocationsLoading] = useState(false)
-  const [form, setForm] = useState<Record<string, string>>({ country: 'Canada' })
+  const [form, setForm] = useState<Record<string,string>>({ country: 'Canada' })
   const [states, setStates] = useState<string[]>([])
   const [cities, setCities] = useState<string[]>([])
   const [reason, setReason] = useState('')
   const [grantId, setGrantId] = useState('')
   const [requestedAmount, setRequestedAmount] = useState('')
 
-  useEffect(() => {
-    setGrantId(new URLSearchParams(window.location.search).get('grant') || '')
-  }, [])
+  useEffect(() => { setGrantId(new URLSearchParams(window.location.search).get('grant') || '') }, [])
+  useEffect(() => { let active=true; async function loadStates(){ const code=countryCodes[form.country]; if(!code){setStates([]);setCities([]);return}; setLocationsLoading(true); try{const nextStates=geoClient.getStatesByShort(code)||[]; if(active){setStates(nextStates);setCities([])}} finally{if(active)setLocationsLoading(false)} } loadStates(); return()=>{active=false} },[form.country])
+  useEffect(() => { let active=true; async function loadCities(){ const code=countryCodes[form.country]; if(!code||!form.state){setCities([]);return}; setLocationsLoading(true); try{const nextCities=await geoClient.getCities(code,form.state); if(active)setCities(nextCities||[])} finally{if(active)setLocationsLoading(false)} } loadCities(); return()=>{active=false} },[form.country,form.state])
+  const cityOptions=useMemo(()=>[...cities].sort((a,b)=>a.localeCompare(b)),[cities]); const stateOptions=useMemo(()=>[...states].sort((a,b)=>a.localeCompare(b)),[states])
+  function change(key:string,value:string){setForm(current=>{const next={...current,[key]:value};if(key==='country'){next.state='';next.city=''}if(key==='state')next.city='';return next});if(key==='address')setAddressError('')}
+  async function submit(event:FormEvent){event.preventDefault();setError('');if(!form.address?.trim()||!/\d/.test(form.address)||form.address.trim().length<2){setAddressError('Enter your real house or apartment number. Fake or placeholder entries are not accepted.');return}if(!form.country||!form.state||!form.city){setAddressError('Select your country, state/province, and city from the listed options.');return}if(!stateOptions.includes(form.state)||!cityOptions.includes(form.city)){setAddressError('Please select a valid state/province and city from the available lists.');return}setAddressError('');setLoading(true);try{const response=await fetch('/api/applications',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...form,reason,grant_id:grantId,requested_amount:requestedAmount})});const data=await response.json();if(!response.ok){setError(data.error||'Unable to submit application');return}setSubmitted(true)}catch{setError('Unable to submit application. Please try again.')}finally{setLoading(false)}}
 
-  useEffect(() => {
-    let active = true
-    async function loadStates() {
-      const code = countryCodes[form.country]
-      if (!code) {
-        setStates([])
-        setCities([])
-        return
-      }
-      setLocationsLoading(true)
-      try {
-        const nextStates = geoClient.getStatesByShort(code) || []
-        if (active) {
-          setStates(nextStates)
-          setCities([])
-        }
-      } finally {
-        if (active) setLocationsLoading(false)
-      }
-    }
-    loadStates()
-    return () => { active = false }
-  }, [form.country])
-
-  useEffect(() => {
-    let active = true
-    async function loadCities() {
-      const code = countryCodes[form.country]
-      if (!code || !form.state) {
-        setCities([])
-        return
-      }
-      setLocationsLoading(true)
-      try {
-        const nextCities = await geoClient.getCities(code, form.state)
-        if (active) setCities(nextCities || [])
-      } finally {
-        if (active) setLocationsLoading(false)
-      }
-    }
-    loadCities()
-    return () => { active = false }
-  }, [form.country, form.state])
-
-  const cityOptions = useMemo(() => [...cities].sort((a, b) => a.localeCompare(b)), [cities])
-  const stateOptions = useMemo(() => [...states].sort((a, b) => a.localeCompare(b)), [states])
-
-  function change(key: string, value: string) {
-    setForm((current) => {
-      const next = { ...current, [key]: value }
-      if (key === 'country') {
-        next.state = ''
-        next.city = ''
-      }
-      if (key === 'state') next.city = ''
-      return next
-    })
-    if (key === 'address') setAddressError('')
-  }
-
-  async function submit(event: FormEvent) {
-    event.preventDefault()
-    setError('')
-    if (!form.address?.trim() || !/\d/.test(form.address) || form.address.trim().length < 2) {
-      setAddressError('Enter your real house or apartment number. Fake or placeholder entries are not accepted.')
-      return
-    }
-    if (!form.country || !form.state || !form.city) {
-      setAddressError('Select your country, state/province, and city from the listed options.')
-      return
-    }
-    if (!stateOptions.includes(form.state) || !cityOptions.includes(form.city)) {
-      setAddressError('Please select a valid state/province and city from the available lists.')
-      return
-    }
-    setAddressError('')
-    setLoading(true)
-
-    try {
-      const response = await fetch('/api/applications', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, reason, grant_id: grantId, requested_amount: requestedAmount }),
-      })
-      const data = await response.json()
-      if (!response.ok) {
-        setError(data.error || 'Unable to submit application')
-        return
-      }
-      setSubmitted(true)
-    } catch {
-      setError('Unable to submit application. Please try again.')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  return (
-    <>
-      <SiteHeader />
-      <main className="bg-[#f4f7f9] py-10">
-        <div className="container-x max-w-4xl">
-          <div className="mb-7">
-            <p className="text-xs font-bold uppercase tracking-wider text-[#005ea8]">Applicants</p>
-            <h1 className="mt-2 text-3xl font-extrabold text-[#12304a]">Application form</h1>
-            <p className="mt-3 text-sm leading-6 text-[#536b79]">Complete the information below. No applicant account or password is required. Your applicant record is created automatically when you submit.</p>
-          </div>
-
-          {submitted ? (
-            <div className="rounded-lg border border-[#b9d8c6] bg-white p-8">
-              <h2 className="text-xl font-bold text-[#12304a]">Application received</h2>
-              <p className="mt-2 text-sm text-[#536b79]">Your application has been submitted successfully. Our team can now review your application.</p>
-            </div>
-          ) : (
-            <form onSubmit={submit} className="rounded-lg border border-[#d9e2e8] bg-white">
-              <div className="border-b border-[#d9e2e8] bg-[#f8fafb] px-6 py-4 text-xs text-[#536b79]">Application details</div>
-              <div className="grid gap-5 p-6 sm:grid-cols-2">
-                <label className="block text-sm font-semibold text-[#27465a]">
-                  Country <span className="text-[#b42318]">*</span>
-                  <select required value={form.country || ''} onChange={(event) => change('country', event.target.value)} className="mt-2 w-full rounded-md border border-[#b9cbd5] bg-white px-3 py-2.5 font-normal outline-none focus:border-[#005ea8]">
-                    <option value="">Select country</option>
-                    {countries.map((country) => <option key={country} value={country}>{country}</option>)}
-                  </select>
-                </label>
-
-                <label className="block text-sm font-semibold text-[#27465a]">
-                  House / Apt No. <span className="text-[#b42318]">*</span>
-                  <input required value={form.address || ''} onChange={(event) => change('address', event.target.value)} placeholder="e.g. 125 or Apt 4B" id="address" name="address" type="text" className="mt-2 w-full rounded-md border border-[#b9cbd5] px-3 py-2.5 font-normal outline-none focus:border-[#005ea8]" />
-                  <span className="mt-2 block text-xs font-normal text-[#647985]">Enter your real house or apartment number. Do not use a fake or placeholder entry.</span>
-                </label>
-
-                <label className="block text-sm font-semibold text-[#27465a]">
-                  State / Province / Region <span className="text-[#b42318]">*</span>
-                  <select required disabled={!form.country || locationsLoading} value={form.state || ''} onChange={(event) => change('state', event.target.value)} className="mt-2 w-full rounded-md border border-[#b9cbd5] bg-white px-3 py-2.5 font-normal outline-none focus:border-[#005ea8] disabled:bg-[#f4f7f9]">
-                    <option value="">{locationsLoading ? 'Loading locations…' : 'Select state / province / region'}</option>
-                    {stateOptions.map((state) => <option key={state} value={state}>{state}</option>)}
-                  </select>
-                </label>
-
-                <label className="block text-sm font-semibold text-[#27465a]">
-                  City <span className="text-[#b42318]">*</span>
-                  <select required disabled={!form.state || locationsLoading} value={form.city || ''} onChange={(event) => change('city', event.target.value)} className="mt-2 w-full rounded-md border border-[#b9cbd5] bg-white px-3 py-2.5 font-normal outline-none focus:border-[#005ea8] disabled:bg-[#f4f7f9]">
-                    <option value="">{locationsLoading ? 'Loading cities…' : form.state ? 'Select city' : 'Select state / province first'}</option>
-                    {cityOptions.map((city) => <option key={city} value={city}>{city}</option>)}
-                  </select>
-                </label>
-
-                {fields.filter(([id]) => id !== 'address').map(([id, label, type]) => (
-                  <label key={id} className="block text-sm font-semibold text-[#27465a]">
-                    {label} <span className="text-[#b42318]">*</span>
-                    <input required value={form[id] || ''} onChange={(event) => change(id, event.target.value)} id={id} name={id} type={type} min={type === 'number' && id === 'age' ? '18' : undefined} className="mt-2 w-full rounded-md border border-[#b9cbd5] px-3 py-2.5 font-normal outline-none focus:border-[#005ea8]" />
-                  </label>
-                ))}
-
-                <label className="block text-sm font-semibold text-[#27465a] sm:col-span-2">
-                  Requested support amount <span className="text-[#b42318]">*</span>
-                  <select required value={requestedAmount} onChange={(event) => setRequestedAmount(event.target.value)} className="mt-2 w-full rounded-md border border-[#b9cbd5] bg-white px-3 py-2.5 font-normal outline-none focus:border-[#005ea8]">
-                    <option value="">Select an amount</option>
-                    {supportAmounts.map((amount) => <option key={amount} value={amount}>{amount}</option>)}
-                  </select>
-                  <span className="mt-2 block text-xs font-normal text-[#647985]">This is the support amount you are requesting. Approval and final award amounts are determined during review.</span>
-                </label>
-                <label className="block text-sm font-semibold text-[#27465a] sm:col-span-2">
-                  Reason for support <span className="text-[#b42318]">*</span>
-                  <textarea required value={reason} onChange={(event) => setReason(event.target.value)} rows={5} className="mt-2 w-full rounded-md border border-[#b9cbd5] px-3 py-2.5 font-normal outline-none focus:border-[#005ea8]" />
-                </label>
-              </div>
-              {addressError && <div className="mx-6 mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-700">{addressError}</div>}
-              {error && <div className="mx-6 mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</div>}
-              <div className="flex flex-col justify-between gap-4 border-t border-[#d9e2e8] bg-[#f8fafb] px-6 py-5 sm:flex-row sm:items-center">
-                <p className="text-xs text-[#647985]">By submitting, you confirm the information is accurate.</p>
-                <button disabled={loading} className="rounded-md bg-[#005ea8] px-6 py-3 text-sm font-bold text-white hover:bg-[#004b87] disabled:opacity-60">{loading ? 'Submitting…' : 'Submit application'}</button>
-              </div>
-            </form>
-          )}
-        </div>
-      </main>
-      <RecentAwards />
-      <GrantFooter />
-    </>
-  )
+  return <>
+    <SiteHeader />
+    <main className="bg-[#f4f7f9] py-10"><div className="container-x max-w-4xl"><div className="mb-7"><p className="text-xs font-bold uppercase tracking-wider text-[#005ea8]">Applicants</p><h1 className="mt-2 text-3xl font-extrabold text-[#12304a]">Application form</h1><p className="mt-3 text-sm leading-6 text-[#536b79]">Complete the information below. No applicant account or password is required. Your applicant record is created automatically when you submit.</p></div>
+      {submitted ? <div className="space-y-5"><div className="rounded-lg border border-[#b9d8c6] bg-white p-8"><h2 className="text-xl font-bold text-[#12304a]">Application received</h2><p className="mt-2 text-sm text-[#536b79]">Your application has been submitted successfully. Your live chat is now open below. An agent will attend to you shortly.</p></div><ChatPanel/></div> : <form onSubmit={submit} className="rounded-lg border border-[#d9e2e8] bg-white"><div className="border-b border-[#d9e2e8] bg-[#f8fafb] px-6 py-4 text-xs text-[#536b79]">Application details</div><div className="grid gap-5 p-6 sm:grid-cols-2">
+        <label className="block text-sm font-semibold text-[#27465a]">Country <span className="text-[#b42318]">*</span><select required value={form.country||''} onChange={e=>change('country',e.target.value)} className="mt-2 w-full rounded-md border border-[#b9cbd5] bg-white px-3 py-2.5 font-normal outline-none focus:border-[#005ea8]"><option value="">Select country</option>{countries.map(c=><option key={c} value={c}>{c}</option>)}</select></label>
+        <label className="block text-sm font-semibold text-[#27465a]">House / Apt No. <span className="text-[#b42318]">*</span><input required value={form.address||''} onChange={e=>change('address',e.target.value)} placeholder="e.g. 125 or Apt 4B" id="address" name="address" type="text" className="mt-2 w-full rounded-md border border-[#b9cbd5] px-3 py-2.5 font-normal outline-none focus:border-[#005ea8]" /><span className="mt-2 block text-xs font-normal text-[#647985]">Enter your real house or apartment number. Do not use a fake or placeholder entry.</span></label>
+        <label className="block text-sm font-semibold text-[#27465a]">State / Province / Region <span className="text-[#b42318]">*</span><select required disabled={!form.country||locationsLoading} value={form.state||''} onChange={e=>change('state',e.target.value)} className="mt-2 w-full rounded-md border border-[#b9cbd5] bg-white px-3 py-2.5 font-normal outline-none focus:border-[#005ea8] disabled:bg-[#f4f7f9]"><option value="">{locationsLoading?'Loading locations…':'Select state / province / region'}</option>{stateOptions.map(s=><option key={s} value={s}>{s}</option>)}</select></label>
+        <label className="block text-sm font-semibold text-[#27465a]">City <span className="text-[#b42318]">*</span><select required disabled={!form.state||locationsLoading} value={form.city||''} onChange={e=>change('city',e.target.value)} className="mt-2 w-full rounded-md border border-[#b9cbd5] bg-white px-3 py-2.5 font-normal outline-none focus:border-[#005ea8] disabled:bg-[#f4f7f9]"><option value="">{locationsLoading?'Loading cities…':form.state?'Select city':'Select state / province first'}</option>{cityOptions.map(c=><option key={c} value={c}>{c}</option>)}</select></label>
+        {fields.filter(([id])=>id!=='address').map(([id,label,type])=><label key={id} className="block text-sm font-semibold text-[#27465a]">{label} <span className="text-[#b42318]">*</span><input required value={form[id]||''} onChange={e=>change(id,e.target.value)} id={id} name={id} type={type} min={type==='number'&&id==='age'?'18':undefined} className="mt-2 w-full rounded-md border border-[#b9cbd5] px-3 py-2.5 font-normal outline-none focus:border-[#005ea8]" /></label>)}
+        <label className="block text-sm font-semibold text-[#27465a] sm:col-span-2">Requested support amount <span className="text-[#b42318]">*</span><select required value={requestedAmount} onChange={e=>setRequestedAmount(e.target.value)} className="mt-2 w-full rounded-md border border-[#b9cbd5] bg-white px-3 py-2.5 font-normal outline-none focus:border-[#005ea8]"><option value="">Select an amount</option>{supportAmounts.map(a=><option key={a} value={a}>{a}</option>)}</select><span className="mt-2 block text-xs font-normal text-[#647985]">This is the support amount you are requesting. Approval and final award amounts are determined during review.</span></label>
+        <label className="block text-sm font-semibold text-[#27465a] sm:col-span-2">Reason for support <span className="text-[#b42318]">*</span><textarea required value={reason} onChange={e=>setReason(e.target.value)} rows={5} className="mt-2 w-full rounded-md border border-[#b9cbd5] px-3 py-2.5 font-normal outline-none focus:border-[#005ea8]" /></label>
+      </div>{addressError&&<div className="mx-6 mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-700">{addressError}</div>}{error&&<div className="mx-6 mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</div>}<div className="flex flex-col justify-between gap-4 border-t border-[#d9e2e8] bg-[#f8fafb] px-6 py-5 sm:flex-row sm:items-center"><p className="text-xs text-[#647985]">By submitting, you confirm the information is accurate.</p><button disabled={loading} className="rounded-md bg-[#005ea8] px-6 py-3 text-sm font-bold text-white hover:bg-[#004b87] disabled:opacity-60">{loading?'Submitting…':'Submit application'}</button></div></form>}
+    </div></main><RecentAwards/><GrantFooter/>
+  </>
 }
