@@ -1,28 +1,34 @@
 'use client'
 
 import { FormEvent, useEffect, useMemo, useState } from 'react'
+import geoClient from 'countrycitystatejson/client'
 import { SiteHeader } from '@/components/site-header'
 import { GrantFooter } from '@/components/grant-footer'
 import { RecentAwards } from '@/components/recent-awards'
 
-const canadaLocations: Record<string, string[]> = {
-  Alberta: ['Calgary', 'Edmonton', 'Red Deer', 'Lethbridge', 'St. Albert', 'Medicine Hat', 'Grande Prairie', 'Airdrie', 'Fort McMurray'],
-  'British Columbia': ['Vancouver', 'Victoria', 'Surrey', 'Burnaby', 'Richmond', 'Kelowna', 'Abbotsford', 'Coquitlam', 'Langley', 'Kamloops', 'Nanaimo'],
-  Manitoba: ['Winnipeg', 'Brandon', 'Steinbach', 'Thompson', 'Portage la Prairie', 'Winkler', 'Selkirk'],
-  'New Brunswick': ['Fredericton', 'Moncton', 'Saint John', 'Dieppe', 'Miramichi', 'Bathurst', 'Edmundston'],
-  'Newfoundland and Labrador': ["St. John's", 'Corner Brook', 'Mount Pearl', 'Conception Bay South', 'Grand Falls-Windsor', 'Paradise'],
-  'Northwest Territories': ['Yellowknife', 'Hay River', 'Inuvik', 'Fort Smith'],
-  'Nova Scotia': ['Halifax', 'Sydney', 'Dartmouth', 'Truro', 'New Glasgow', 'Glace Bay', 'Kentville'],
-  Nunavut: ['Iqaluit', 'Rankin Inlet', 'Arviat', 'Baker Lake', 'Cambridge Bay', 'Igloolik'],
-  Ontario: ['Toronto', 'Ottawa', 'Mississauga', 'Brampton', 'Hamilton', 'London', 'Kitchener', 'Windsor', 'Oshawa', 'Barrie', 'Kingston', 'Sudbury', 'Thunder Bay', 'Guelph', 'Waterloo', 'Niagara Falls', 'St. Catharines'],
-  'Prince Edward Island': ['Charlottetown', 'Summerside', 'Stratford', 'Cornwall', 'Montague', 'Kensington'],
-  Quebec: ['Montréal', 'Québec City', 'Laval', 'Gatineau', 'Longueuil', 'Sherbrooke', 'Saguenay', 'Trois-Rivières', 'Terrebonne', 'Drummondville', 'Granby', 'Saint-Hyacinthe'],
-  Saskatchewan: ['Saskatoon', 'Regina', 'Prince Albert', 'Moose Jaw', 'Yorkton', 'Swift Current', 'North Battleford', 'Weyburn'],
-  Yukon: ['Whitehorse', 'Dawson City', 'Watson Lake', 'Haines Junction'],
+const countryCodes: Record<string, string> = {
+  Canada: 'CA',
+  'United States': 'US',
+  Australia: 'AU',
+  'United Kingdom': 'GB',
+  France: 'FR',
+  Germany: 'DE',
+  Italy: 'IT',
+  Spain: 'ES',
+  Netherlands: 'NL',
+  Belgium: 'BE',
+  Ireland: 'IE',
+  Switzerland: 'CH',
+  Austria: 'AT',
+  Sweden: 'SE',
+  Norway: 'NO',
+  Denmark: 'DK',
+  Finland: 'FI',
+  Portugal: 'PT',
+  'New Zealand': 'NZ',
 }
 
-const canadianProvinces = Object.keys(canadaLocations)
-const countries = ['Canada', 'United States', 'Australia', 'United Kingdom', 'France', 'Germany', 'Italy', 'Spain', 'Netherlands', 'Belgium', 'Ireland', 'Switzerland', 'Austria', 'Sweden', 'Norway', 'Denmark', 'Finland', 'Portugal', 'New Zealand']
+const countries = Object.keys(countryCodes)
 const fields = [
   ['full_name', 'Full name', 'text'],
   ['address', 'House / Apt No.', 'text'],
@@ -43,7 +49,10 @@ export default function ApplyPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [addressError, setAddressError] = useState('')
+  const [locationsLoading, setLocationsLoading] = useState(false)
   const [form, setForm] = useState<Record<string, string>>({ country: 'Canada' })
+  const [states, setStates] = useState<string[]>([])
+  const [cities, setCities] = useState<string[]>([])
   const [reason, setReason] = useState('')
   const [grantId, setGrantId] = useState('')
   const [requestedAmount, setRequestedAmount] = useState('')
@@ -52,8 +61,52 @@ export default function ApplyPage() {
     setGrantId(new URLSearchParams(window.location.search).get('grant') || '')
   }, [])
 
-  const cities = useMemo(() => canadaLocations[form.state] || [], [form.state])
-  const isCanada = form.country === 'Canada'
+  useEffect(() => {
+    let active = true
+    async function loadStates() {
+      const code = countryCodes[form.country]
+      if (!code) {
+        setStates([])
+        setCities([])
+        return
+      }
+      setLocationsLoading(true)
+      try {
+        const nextStates = geoClient.getStatesByShort(code) || []
+        if (active) {
+          setStates(nextStates)
+          setCities([])
+        }
+      } finally {
+        if (active) setLocationsLoading(false)
+      }
+    }
+    loadStates()
+    return () => { active = false }
+  }, [form.country])
+
+  useEffect(() => {
+    let active = true
+    async function loadCities() {
+      const code = countryCodes[form.country]
+      if (!code || !form.state) {
+        setCities([])
+        return
+      }
+      setLocationsLoading(true)
+      try {
+        const nextCities = await geoClient.getCities(code, form.state)
+        if (active) setCities(nextCities || [])
+      } finally {
+        if (active) setLocationsLoading(false)
+      }
+    }
+    loadCities()
+    return () => { active = false }
+  }, [form.country, form.state])
+
+  const cityOptions = useMemo(() => [...cities].sort((a, b) => a.localeCompare(b)), [cities])
+  const stateOptions = useMemo(() => [...states].sort((a, b) => a.localeCompare(b)), [states])
 
   function change(key: string, value: string) {
     setForm((current) => {
@@ -75,8 +128,12 @@ export default function ApplyPage() {
       setAddressError('Enter your real house or apartment number. Fake or placeholder entries are not accepted.')
       return
     }
-    if (isCanada && (!form.state || !form.city)) {
-      setAddressError('Select your Canadian province or territory and city from the listed options.')
+    if (!form.country || !form.state || !form.city) {
+      setAddressError('Select your country, state/province, and city from the listed options.')
+      return
+    }
+    if (!stateOptions.includes(form.state) || !cityOptions.includes(form.city)) {
+      setAddressError('Please select a valid state/province and city from the available lists.')
       return
     }
     setAddressError('')
@@ -131,40 +188,25 @@ export default function ApplyPage() {
 
                 <label className="block text-sm font-semibold text-[#27465a]">
                   House / Apt No. <span className="text-[#b42318]">*</span>
-                  <input required value={form.address || ''} onChange={(event) => change('address', event.target.value)} placeholder="e.g. 125" id="address" name="address" type="text" className="mt-2 w-full rounded-md border border-[#b9cbd5] px-3 py-2.5 font-normal outline-none focus:border-[#005ea8]" />
+                  <input required value={form.address || ''} onChange={(event) => change('address', event.target.value)} placeholder="e.g. 125 or Apt 4B" id="address" name="address" type="text" className="mt-2 w-full rounded-md border border-[#b9cbd5] px-3 py-2.5 font-normal outline-none focus:border-[#005ea8]" />
                   <span className="mt-2 block text-xs font-normal text-[#647985]">Enter your real house or apartment number. Do not use a fake or placeholder entry.</span>
-                  {addressError && <span className="mt-2 block text-xs font-semibold text-[#b42318]">{addressError}</span>}
                 </label>
 
-                {isCanada ? (
-                  <>
-                    <label className="block text-sm font-semibold text-[#27465a]">
-                      Province / Territory <span className="text-[#b42318]">*</span>
-                      <select required value={form.state || ''} onChange={(event) => change('state', event.target.value)} className="mt-2 w-full rounded-md border border-[#b9cbd5] bg-white px-3 py-2.5 font-normal outline-none focus:border-[#005ea8]">
-                        <option value="">Select province or territory</option>
-                        {canadianProvinces.map((province) => <option key={province} value={province}>{province}</option>)}
-                      </select>
-                    </label>
-                    <label className="block text-sm font-semibold text-[#27465a]">
-                      City <span className="text-[#b42318]">*</span>
-                      <select required disabled={!form.state} value={form.city || ''} onChange={(event) => change('city', event.target.value)} className="mt-2 w-full rounded-md border border-[#b9cbd5] bg-white px-3 py-2.5 font-normal outline-none focus:border-[#005ea8] disabled:bg-[#f4f7f9]">
-                        <option value="">{form.state ? 'Select city' : 'Select province first'}</option>
-                        {cities.map((city) => <option key={city} value={city}>{city}</option>)}
-                      </select>
-                    </label>
-                  </>
-                ) : (
-                  <>
-                    <label className="block text-sm font-semibold text-[#27465a]">
-                      State / Province <span className="text-[#b42318]">*</span>
-                      <input required value={form.state || ''} onChange={(event) => change('state', event.target.value)} type="text" className="mt-2 w-full rounded-md border border-[#b9cbd5] px-3 py-2.5 font-normal outline-none focus:border-[#005ea8]" />
-                    </label>
-                    <label className="block text-sm font-semibold text-[#27465a]">
-                      City <span className="text-[#b42318]">*</span>
-                      <input required value={form.city || ''} onChange={(event) => change('city', event.target.value)} type="text" className="mt-2 w-full rounded-md border border-[#b9cbd5] px-3 py-2.5 font-normal outline-none focus:border-[#005ea8]" />
-                    </label>
-                  </>
-                )}
+                <label className="block text-sm font-semibold text-[#27465a]">
+                  State / Province / Region <span className="text-[#b42318]">*</span>
+                  <select required disabled={!form.country || locationsLoading} value={form.state || ''} onChange={(event) => change('state', event.target.value)} className="mt-2 w-full rounded-md border border-[#b9cbd5] bg-white px-3 py-2.5 font-normal outline-none focus:border-[#005ea8] disabled:bg-[#f4f7f9]">
+                    <option value="">{locationsLoading ? 'Loading locations…' : 'Select state / province / region'}</option>
+                    {stateOptions.map((state) => <option key={state} value={state}>{state}</option>)}
+                  </select>
+                </label>
+
+                <label className="block text-sm font-semibold text-[#27465a]">
+                  City <span className="text-[#b42318]">*</span>
+                  <select required disabled={!form.state || locationsLoading} value={form.city || ''} onChange={(event) => change('city', event.target.value)} className="mt-2 w-full rounded-md border border-[#b9cbd5] bg-white px-3 py-2.5 font-normal outline-none focus:border-[#005ea8] disabled:bg-[#f4f7f9]">
+                    <option value="">{locationsLoading ? 'Loading cities…' : form.state ? 'Select city' : 'Select state / province first'}</option>
+                    {cityOptions.map((city) => <option key={city} value={city}>{city}</option>)}
+                  </select>
+                </label>
 
                 {fields.filter(([id]) => id !== 'address').map(([id, label, type]) => (
                   <label key={id} className="block text-sm font-semibold text-[#27465a]">
@@ -186,6 +228,7 @@ export default function ApplyPage() {
                   <textarea required value={reason} onChange={(event) => setReason(event.target.value)} rows={5} className="mt-2 w-full rounded-md border border-[#b9cbd5] px-3 py-2.5 font-normal outline-none focus:border-[#005ea8]" />
                 </label>
               </div>
+              {addressError && <div className="mx-6 mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-700">{addressError}</div>}
               {error && <div className="mx-6 mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</div>}
               <div className="flex flex-col justify-between gap-4 border-t border-[#d9e2e8] bg-[#f8fafb] px-6 py-5 sm:flex-row sm:items-center">
                 <p className="text-xs text-[#647985]">By submitting, you confirm the information is accurate.</p>
