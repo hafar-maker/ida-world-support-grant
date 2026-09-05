@@ -1,5 +1,37 @@
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { DashboardShell } from '@/components/dashboard-shell'
+import { ChatPanel } from '@/components/chat-panel'
 import { createClient } from '@/lib/supabase/server'
-export default async function MessagesPage(){const supabase=await createClient();const {data:{user}}=await supabase.auth.getUser();if(!user)redirect('/login?next=/dashboard/messages');const {data:apps}=await supabase.from('applications').select('id,application_number').eq('applicant_id',user.id);const ids=(apps||[]).map(a=>a.id);const {data:messages}=ids.length?await supabase.from('messages').select('id,body,created_at,sender_id,applications(application_number)').in('application_id',ids).order('created_at',{ascending:false}):{data:[]};return <DashboardShell><div className="p-5 lg:p-8"><Link href="/dashboard" className="text-xs font-bold text-[#005EA8]">← Dashboard</Link><h1 className="mt-4 text-2xl font-extrabold text-[#12304A]">Messages</h1><div className="mt-6 max-w-3xl divide-y overflow-hidden rounded-xl border bg-white">{(messages||[]).map((m:any)=><div key={m.id} className="p-5"><div className="text-xs font-bold text-[#12304A]">Grant team</div><p className="mt-2 text-sm leading-6 text-slate-600">{m.body}</p><div className="mt-2 text-[11px] text-slate-400">{new Date(m.created_at).toLocaleString()}</div></div>)}{!(messages||[]).length&&<div className="p-8 text-sm text-slate-500">No messages yet.</div>}</div></div></DashboardShell>}
+
+export default async function MessagesPage() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login?next=/dashboard/messages')
+
+  const { data: application } = await supabase
+    .from('applications')
+    .select('id, application_number, full_name')
+    .eq('applicant_id', user.id)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  return (
+    <DashboardShell>
+      <div className="p-5 lg:p-8">
+        <Link href="/dashboard" className="text-xs font-bold text-[#005EA8]">← Dashboard</Link>
+        <div className="mt-4 flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h1 className="text-2xl font-extrabold text-[#12304A]">Messages</h1>
+            <p className="mt-1 text-sm text-slate-500">Communicate directly with the grant team about your application.</p>
+          </div>
+          {application && <div className="text-xs font-bold text-[#005EA8]">{application.application_number}</div>}
+        </div>
+        <div className="mt-6 max-w-3xl">
+          {application ? <ChatPanel applicationId={application.id} applicantName={application.full_name} /> : <div className="rounded-xl border bg-white p-8 text-sm text-slate-500">Submit an application to open your live chat.</div>}
+        </div>
+      </div>
+    </DashboardShell>
+  )
+}
