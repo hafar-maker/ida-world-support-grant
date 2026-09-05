@@ -6,6 +6,7 @@ const nav = [
   ["About", "/about"],
   ["Find a Grant", "/grants"],
   ["Applicants", "/apply"],
+  ["My Applications", "/my-applications"],
   ["Help", "/#contact"],
 ];
 
