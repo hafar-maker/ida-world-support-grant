@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { sendApplicationEmail } from '@/lib/application-email'
 
 export async function POST(request: Request) {
   try {
@@ -33,6 +34,18 @@ export async function POST(request: Request) {
     const application = Array.isArray(data) ? data[0] : data
     if (!application) {
       return NextResponse.json({ error: 'Unable to submit application.' }, { status: 500 })
+    }
+
+    try {
+      await sendApplicationEmail({
+        to: body.email,
+        name: body.full_name,
+        applicationNumber: application.application_number,
+        status: application.status,
+      })
+    } catch (emailError) {
+      // Email delivery must never undo a successful application submission.
+      console.error('Application confirmation email failed:', emailError)
     }
 
     return NextResponse.json(application, { status: 201 })
