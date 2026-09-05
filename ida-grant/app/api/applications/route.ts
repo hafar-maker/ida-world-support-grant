@@ -36,19 +36,21 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Unable to submit application.' }, { status: 500 })
     }
 
+    let emailSent = false
     try {
-      await sendApplicationEmail({
+      const emailResult = await sendApplicationEmail({
         to: body.email,
         name: body.full_name,
         applicationNumber: application.application_number,
         status: application.status,
       })
+      emailSent = emailResult.sent
     } catch (emailError) {
       // Email delivery must never undo a successful application submission.
       console.error('Application confirmation email failed:', emailError)
     }
 
-    return NextResponse.json(application, { status: 201 })
+    return NextResponse.json({ ...application, email_sent: emailSent }, { status: 201 })
   } catch (error) {
     console.error('Application submission request failed:', error)
     return NextResponse.json({ error: 'Unable to submit application. Please try again.' }, { status: 400 })
