@@ -1,0 +1,3 @@
+import Link from "next/link";
+import { ArrowRight } from "lucide-react";
+export function CTA(){return <section className="py-12"><div className="container-x"><div className="section-blue flex flex-col items-center justify-between gap-6 rounded-2xl px-8 py-10 text-center text-white md:flex-row md:px-12 md:text-left"><div><h2 className="text-2xl font-extrabold">Ready to Apply?</h2><p className="mt-2 text-xs text-[#D7E6EF]">Take the first step towards a better tomorrow.</p></div><Link href="/apply" className="inline-flex items-center gap-2 rounded-lg bg-white px-6 py-3 text-xs font-bold text-[#005EA8]">Apply Now <ArrowRight size={14}/></Link></div></div></section>}
