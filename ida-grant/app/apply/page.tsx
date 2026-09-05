@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation'
 import { SiteHeader } from '@/components/site-header'
 import { GrantFooter } from '@/components/grant-footer'
 import { RecentAwards } from '@/components/recent-awards'
-import { createClient } from '@/lib/supabase/client'
 
 const fields = [
   ['full_name', 'Full name', 'text'],
@@ -25,30 +24,15 @@ const fields = [
 export default function ApplyPage() {
   const router = useRouter()
   const [submitted, setSubmitted] = useState(false)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [form, setForm] = useState<Record<string, string>>({})
   const [reason, setReason] = useState('')
   const [grantId, setGrantId] = useState('')
 
   useEffect(() => {
-    const supabase = createClient()
-    const grant = new URLSearchParams(window.location.search).get('grant') || ''
-    setGrantId(grant)
-
-    supabase.auth.getUser().then(({ data }) => {
-      if (!data.user) {
-        router.replace('/login?next=/apply')
-        return
-      }
-
-      setForm((value) => ({
-        ...value,
-        email: value.email || data.user?.email || '',
-      }))
-      setLoading(false)
-    })
-  }, [router])
+    setGrantId(new URLSearchParams(window.location.search).get('grant') || '')
+  }, [])
 
   function change(key: string, value: string) {
     setForm((current) => ({ ...current, [key]: value }))
@@ -57,31 +41,29 @@ export default function ApplyPage() {
   async function submit(event: FormEvent) {
     event.preventDefault()
     setError('')
+    setLoading(true)
 
-    const response = await fetch('/api/applications', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...form, reason, grant_id: grantId }),
-    })
+    try {
+      const response = await fetch('/api/applications', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...form, reason, grant_id: grantId }),
+      })
 
-    const data = await response.json()
-    if (!response.ok) {
-      setError(data.error || 'Unable to submit application')
-      return
+      const data = await response.json()
+      if (!response.ok) {
+        setError(data.error || 'Unable to submit application')
+        setLoading(false)
+        return
+      }
+
+      setSubmitted(true)
+      setTimeout(() => router.push('/'), 1500)
+    } catch {
+      setError('Unable to submit application. Please try again.')
+    } finally {
+      setLoading(false)
     }
-
-    setSubmitted(true)
-    setTimeout(() => router.push('/dashboard'), 900)
-  }
-
-  if (loading) {
-    return (
-      <>
-        <SiteHeader />
-        <main className="container-x py-20 text-sm text-slate-500">Checking your account…</main>
-        <GrantFooter />
-      </>
-    )
   }
 
   return (
@@ -93,7 +75,7 @@ export default function ApplyPage() {
             <p className="text-xs font-bold uppercase tracking-wider text-[#005ea8]">Applicants</p>
             <h1 className="mt-2 text-3xl font-extrabold text-[#12304a]">Application form</h1>
             <p className="mt-3 text-sm leading-6 text-[#536b79]">
-              Complete the information below. Your application is saved securely when you submit it.
+              Complete the information below. No applicant account or password is required. Your applicant record is created automatically when you submit.
             </p>
           </div>
 
@@ -101,7 +83,7 @@ export default function ApplyPage() {
             <div className="rounded-lg border border-[#b9d8c6] bg-white p-8">
               <h2 className="text-xl font-bold text-[#12304a]">Application received</h2>
               <p className="mt-2 text-sm text-[#536b79]">
-                Your application has been submitted. Redirecting you to your dashboard…
+                Your application has been submitted successfully. Our team can now review your application.
               </p>
             </div>
           ) : (
@@ -141,8 +123,8 @@ export default function ApplyPage() {
 
               <div className="flex flex-col justify-between gap-4 border-t border-[#d9e2e8] bg-[#f8fafb] px-6 py-5 sm:flex-row sm:items-center">
                 <p className="text-xs text-[#647985]">By submitting, you confirm the information is accurate.</p>
-                <button className="rounded-md bg-[#005ea8] px-6 py-3 text-sm font-bold text-white hover:bg-[#004b87]">
-                  Submit application
+                <button disabled={loading} className="rounded-md bg-[#005ea8] px-6 py-3 text-sm font-bold text-white hover:bg-[#004b87] disabled:opacity-60">
+                  {loading ? 'Submitting…' : 'Submit application'}
                 </button>
               </div>
             </form>
