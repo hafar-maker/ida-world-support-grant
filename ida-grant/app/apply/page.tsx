@@ -7,7 +7,7 @@ import { RecentAwards } from '@/components/recent-awards'
 
 const fields = [
   ['full_name', 'Full name', 'text'],
-  ['address', 'Address', 'text'],
+  ['address', 'Residential street address', 'text'],
   ['age', 'Age', 'number'],
   ['city', 'City', 'text'],
   ['state', 'State / Province', 'text'],
@@ -22,10 +22,21 @@ const fields = [
 
 const supportAmounts = ['$30,000', '$85,000', '$120,000', '$170,000', '$300,000', '$500,000', '$650,000', '$800,000', '$1,000,000', '$1,400,000']
 
+function looksLikeRealAddress(value: string) {
+  const address = value.trim()
+  if (address.length < 8 || address.length > 180) return false
+  if (/^(test|fake|n\/a|na|none|unknown|asdf|qwerty)$/i.test(address)) return false
+  const hasNumber = /\d/.test(address)
+  const hasLetters = /[A-Za-z]/.test(address)
+  const hasStreetWord = /\b(street|st|road|rd|avenue|ave|lane|ln|drive|dr|boulevard|blvd|close|crescent|court|ct|way|place|pl|terrace|ter|park|highway|hwy)\b/i.test(address)
+  return hasNumber && hasLetters && (hasStreetWord || address.split(/\s+/).length >= 3)
+}
+
 export default function ApplyPage() {
   const [submitted, setSubmitted] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [addressError, setAddressError] = useState('')
   const [form, setForm] = useState<Record<string, string>>({})
   const [reason, setReason] = useState('')
   const [grantId, setGrantId] = useState('')
@@ -37,11 +48,17 @@ export default function ApplyPage() {
 
   function change(key: string, value: string) {
     setForm((current) => ({ ...current, [key]: value }))
+    if (key === 'address') setAddressError('')
   }
 
   async function submit(event: FormEvent) {
     event.preventDefault()
     setError('')
+    if (!looksLikeRealAddress(form.address || '')) {
+      setAddressError('Please enter your real residential street address, including a house/building number and street name. Test, fake, or placeholder addresses are not accepted.')
+      return
+    }
+    setAddressError('')
     setLoading(true)
 
     try {
@@ -86,7 +103,9 @@ export default function ApplyPage() {
                 {fields.map(([id, label, type]) => (
                   <label key={id} className="block text-sm font-semibold text-[#27465a]">
                     {label} <span className="text-[#b42318]">*</span>
-                    <input required value={form[id] || ''} onChange={(event) => change(id, event.target.value)} id={id} name={id} type={type} className="mt-2 w-full rounded-md border border-[#b9cbd5] px-3 py-2.5 font-normal outline-none focus:border-[#005ea8]" />
+                    <input required value={form[id] || ''} onChange={(event) => change(id, event.target.value)} id={id} name={id} type={type} min={type === 'number' && id === 'age' ? '18' : undefined} className="mt-2 w-full rounded-md border border-[#b9cbd5] px-3 py-2.5 font-normal outline-none focus:border-[#005ea8]" />
+                    {id === 'address' && <span className="mt-2 block text-xs font-normal text-[#647985]">Enter your real residential street address. Do not use a fake, test, or placeholder address.</span>}
+                    {id === 'address' && addressError && <span className="mt-2 block text-xs font-semibold text-[#b42318]">{addressError}</span>}
                   </label>
                 ))}
                 <label className="block text-sm font-semibold text-[#27465a] sm:col-span-2">
