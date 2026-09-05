@@ -14,13 +14,8 @@ export function SiteHeader() {
   return (
     <>
       <div className="border-b border-[#d9e2e8] bg-[#f4f7f9] text-[12px] text-[#27465a]">
-        <div className="container-x flex min-h-9 items-center justify-between gap-4">
-          <span>IDA World Support Grant</span>
-          <div className="flex items-center gap-4">
-            <Link href="#contact" className="hover:underline">Help</Link>
-            <Link href="/dashboard" className="hover:underline">My account</Link>
-            <Link href="/login" className="font-semibold text-[#005ea8] hover:underline">Register / Login</Link>
-          </div>
+        <div className="container-x flex min-h-9 items-center justify-end gap-4">
+          <Link href="#contact" className="hover:underline">Help</Link>
         </div>
       </div>
       <header className="sticky top-0 z-40 border-b border-[#d9e2e8] bg-white">
