@@ -100,10 +100,11 @@ export function ChatPanel({ applicationId, applicantName, staff = false }: { app
 
     <div className="h-[460px] overflow-y-auto bg-[#EAF1F5] px-4 py-5 sm:px-6">
       {loading ? <div className="py-12 text-center text-sm text-slate-500">Opening chat…</div> : messages.length ? messages.map(m => {
-        const mine = m.sender_id === userId
-        const isAgentMessage = m.sender_role === 'agent' || m.sender_role === 'admin'
-        const alignLeft = staff ? isAgentMessage : !isAgentMessage
-        const label = staff ? (isAgentMessage ? 'Agent' : 'Applicant') : (mine ? 'You' : 'Agent')
+        // The current user's sender_id is the source of truth for "You".
+        // The other participant is always the opposite side of this 1:1 chat.
+        const mine = Boolean(userId) && m.sender_id === userId
+        const alignLeft = !mine
+        const label = mine ? 'You' : (staff ? 'Applicant' : 'Agent')
         return <div key={m.id} className={`mb-3 flex w-full ${alignLeft ? 'justify-start' : 'justify-end'}`}>
           <div className={`max-w-[78%] sm:max-w-[68%] ${alignLeft ? 'items-start' : 'items-end'} flex flex-col`}>
             <div className={`mb-1 px-1 text-[10px] font-bold uppercase tracking-wide ${alignLeft ? 'text-[#005EA8]' : 'text-slate-500'}`}>{label}</div>
@@ -111,7 +112,7 @@ export function ChatPanel({ applicationId, applicantName, staff = false }: { app
               <p className="whitespace-pre-wrap break-words">{m.message}</p>
               <div className={`mt-1.5 flex items-center justify-end gap-1 text-[10px] ${alignLeft ? 'text-slate-400' : 'text-slate-500'}`}>
                 {new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                {!alignLeft && mine && <Check size={12} className="text-[#005EA8]" />}
+                {mine && <Check size={12} className="text-[#005EA8]" />}
               </div>
             </div>
           </div>
