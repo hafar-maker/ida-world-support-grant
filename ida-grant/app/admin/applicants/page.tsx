@@ -10,7 +10,7 @@ export default async function AdminApplicantsPage() {
 
   const { data: applicants } = await supabase
     .from('profiles')
-    .select('id, full_name, email, phone, country, city, created_at, applications(id, application_number, status, created_at)')
+    .select('id, full_name, email, phone, country, created_at, applications(id, application_number, status, city, created_at)')
     .eq('role', 'applicant')
     .order('created_at', { ascending: false })
 
@@ -27,7 +27,7 @@ export default async function AdminApplicantsPage() {
             {(applicants ?? []).map((a: any) => (
               <div key={a.id} className="grid gap-4 p-5 md:grid-cols-[1.2fr_1fr_1fr_auto] md:items-center">
                 <div><div className="text-sm font-bold text-[#12304A]">{a.full_name || 'Unnamed applicant'}</div><div className="text-xs text-slate-500">{a.email || 'No email'} · {a.phone || 'No phone'}</div></div>
-                <div className="text-xs text-slate-500">{a.country || '—'}{a.city ? ` · ${a.city}` : ''}</div>
+                <div className="text-xs text-slate-500">{a.country || '—'}{a.applications?.[0]?.city ? ` · ${a.applications[0].city}` : ''}</div>
                 <div className="text-xs text-slate-500">{a.applications?.length || 0} submission{a.applications?.length === 1 ? '' : 's'}</div>
                 <div className="flex flex-wrap gap-2">{(a.applications ?? []).map((application: any) => <Link key={application.id} href={`/admin/applications/${application.id}`} className="rounded-md bg-[#EAF1F5] px-3 py-2 text-[11px] font-bold text-[#005EA8]">{application.application_number} · {application.status.replaceAll('_',' ')}</Link>)}</div>
               </div>
