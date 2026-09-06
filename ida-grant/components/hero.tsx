@@ -1,15 +1,26 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, CirclePlay } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { VideoModal } from "./video-modal";
 
 const LEARN_MORE_VIDEO_ID = "HpGg232napQ";
 
 export function Hero() {
   const [videoOpen, setVideoOpen] = useState(false);
+  const [heroSrc, setHeroSrc] = useState("/family-hero.png");
+
+  useEffect(() => {
+    fetch("/family-hero.webp.b64", { cache: "force-cache" })
+      .then((response) => response.text())
+      .then((base64) => {
+        if (base64.trim()) setHeroSrc(`data:image/webp;base64,${base64.trim()}`);
+      })
+      .catch(() => {
+        // Keep the existing asset as a fallback if the edited image cannot be loaded.
+      });
+  }, []);
 
   return (
     <>
@@ -46,13 +57,12 @@ export function Hero() {
 
           <div className="relative min-h-[360px] md:min-h-[440px]">
             <div className="absolute inset-x-0 bottom-0 h-[78%] rounded-[44%_44%_12%_12%] bg-[#EAF1F5]/70" />
-            <Image
-              src="/family-hero.png"
+            <img
+              src={heroSrc}
               alt="Family smiling together"
-              fill
-              className="relative object-contain object-center drop-shadow-xl"
-              priority
-              sizes="(max-width: 768px) 100vw, 50vw"
+              className="relative h-full w-full object-contain object-center drop-shadow-xl"
+              fetchPriority="high"
+              decoding="async"
             />
           </div>
         </div>
