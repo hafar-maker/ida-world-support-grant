@@ -37,14 +37,14 @@ export function Hero() {
           <div className="relative z-10 w-full overflow-hidden rounded-2xl border border-[#d7e3ea] bg-[#F4F7F9] px-3 pt-3 shadow-[0_20px_60px_rgba(11,45,69,0.12)] sm:px-5 sm:pt-5">
             <div className="relative flex min-h-[300px] items-end justify-center overflow-hidden rounded-xl bg-gradient-to-b from-[#EAF1F5] to-white sm:min-h-[380px]">
               <Image
-                src="/hero-men.webp"
+                src="/hero-men-hd.jpg"
                 alt="Two men smiling and shaking hands"
-                width={612}
-                height={408}
+                width={720}
+                height={465}
                 priority
                 unoptimized
                 sizes="(min-width: 768px) 50vw, 100vw"
-                className="relative z-10 h-auto w-full max-w-[612px] object-contain object-bottom"
+                className="relative z-10 h-auto w-full max-w-[720px] object-contain object-bottom"
               />
               <div className="absolute bottom-4 left-4 z-20 rounded-lg border border-white/70 bg-white/95 px-4 py-3 shadow-md backdrop-blur-sm sm:bottom-6 sm:left-6">
                 <p className="text-[10px] font-bold uppercase tracking-wider text-[#005EA8]">IDA World Support Grant</p>
