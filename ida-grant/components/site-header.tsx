@@ -15,7 +15,6 @@ const nav = [
 
 export function SiteHeader() {
   const [mobileOpen, setMobileOpen] = useState(false);
-
   const closeMenu = () => setMobileOpen(false);
 
   return (
@@ -28,13 +27,8 @@ export function SiteHeader() {
 
       <header className="sticky top-0 z-40 border-b border-[#d9e2e8] bg-white">
         <div className="container-x flex min-h-[74px] items-center gap-3">
-          <Link
-            href="/"
-            onClick={closeMenu}
-            className="flex min-w-0 flex-1 items-center gap-3"
-            aria-label="IDA World Support Grant home"
-          >
-            <div className="grid h-11 w-11 shrink-0 place-items-center rounded-full border-2 border-[#005ea8] text-[#005ea8] font-black">IDA</div>
+          <Link href="/" onClick={closeMenu} className="flex min-w-0 flex-1 items-center gap-3" aria-label="IDA World Support Grant home">
+            <div className="grid h-11 w-11 shrink-0 place-items-center rounded-full border-2 border-[#005ea8] font-black text-[#005ea8]">IDA</div>
             <div className="leading-tight">
               <div className="text-[13px] font-extrabold tracking-wide text-[#12304a]">IDA WORLD</div>
               <div className="text-[10px] font-bold tracking-[.18em] text-[#536b79]">SUPPORT GRANT</div>
@@ -53,13 +47,7 @@ export function SiteHeader() {
             <Search size={15} /> Search grants
           </Link>
 
-          <button
-            type="button"
-            onClick={() => setMobileOpen((open) => !open)}
-            className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-md border border-[#d9e2e8] text-[#12304a] hover:bg-[#f4f7f9] focus:outline-none focus:ring-2 focus:ring-[#005ea8] lg:hidden"
-            aria-label={mobileOpen ? "Close navigation menu" : "Open navigation menu"}
-            aria-expanded={mobileOpen}
-          >
+          <button type="button" onClick={() => setMobileOpen((open) => !open)} className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-md border border-[#d9e2e8] text-[#12304a] hover:bg-[#f4f7f9] focus:outline-none focus:ring-2 focus:ring-[#005ea8] lg:hidden" aria-label={mobileOpen ? "Close navigation menu" : "Open navigation menu"} aria-expanded={mobileOpen}>
             {mobileOpen ? <X size={22} /> : <Menu size={22} />}
           </button>
         </div>
@@ -68,30 +56,14 @@ export function SiteHeader() {
           <div className="border-t border-[#d9e2e8] bg-white shadow-lg lg:hidden">
             <nav className="container-x py-3" aria-label="Mobile primary">
               {nav.map(([label, href]) => (
-                <Link
-                  key={label}
-                  href={href}
-                  onClick={closeMenu}
-                  className="flex min-h-12 items-center justify-between border-b border-[#edf1f4] px-2 text-sm font-semibold text-[#12304a] last:border-b-0 hover:bg-[#f4f7f9] hover:text-[#005ea8]"
-                >
+                <Link key={label} href={href} onClick={closeMenu} className="flex min-h-12 items-center justify-between border-b border-[#edf1f4] px-2 text-sm font-semibold text-[#12304a] last:border-b-0 hover:bg-[#f4f7f9] hover:text-[#005ea8]">
                   <span>{label}</span>
                   {["Find a Grant", "Applicants"].includes(label) && <ChevronDown size={15} />}
                 </Link>
               ))}
               <div className="grid gap-2 pt-3 sm:hidden">
-                <Link
-                  href="/grants"
-                  onClick={closeMenu}
-                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-[#005ea8] px-4 text-sm font-bold text-[#005ea8]"
-                >
+                <Link href="/grants" onClick={closeMenu} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-[#005ea8] px-4 text-sm font-bold text-[#005ea8]">
                   <Search size={16} /> Search grants
-                </Link>
-                <Link
-                  href="/apply"
-                  onClick={closeMenu}
-                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-[#005ea8] px-4 text-sm font-bold text-white"
-                >
-                  Apply now <ArrowRight size={15}/>
                 </Link>
               </div>
             </nav>
@@ -99,11 +71,7 @@ export function SiteHeader() {
         )}
       </header>
 
-      <Link
-        href="/apply"
-        aria-label="Apply now"
-        className="fixed bottom-5 right-5 z-50 inline-flex items-center gap-2 rounded-full bg-[#005EA8] px-5 py-3.5 text-sm font-extrabold text-white shadow-[0_8px_24px_rgba(11,45,69,0.22)] ring-2 ring-white transition hover:bg-[#004B87] focus:outline-none focus:ring-2 focus:ring-[#005EA8] focus:ring-offset-2"
-      >
+      <Link href="/apply" aria-label="Apply now" className="fixed bottom-5 right-5 z-[60] inline-flex items-center gap-2 rounded-full bg-[#005EA8] px-5 py-3.5 text-sm font-extrabold text-white shadow-[0_8px_24px_rgba(11,45,69,0.22)] ring-2 ring-white transition hover:bg-[#004B87] focus:outline-none focus:ring-2 focus:ring-[#005EA8] focus:ring-offset-2 max-sm:bottom-4 max-sm:right-4 max-sm:px-4 max-sm:py-3">
         Apply now <ArrowRight size={16} />
       </Link>
     </>
