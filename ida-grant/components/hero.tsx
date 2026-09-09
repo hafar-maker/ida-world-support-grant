@@ -43,7 +43,6 @@ export function Hero() {
                 height={465}
                 priority
                 unoptimized
-                sizes="(min-width: 768px) 50vw, 100vw"
                 className="relative z-10 h-auto w-full max-w-[720px] object-contain object-bottom"
               />
               <div className="absolute bottom-4 left-4 z-20 rounded-lg border border-white/70 bg-white/95 px-4 py-3 shadow-md backdrop-blur-sm sm:bottom-6 sm:left-6">
