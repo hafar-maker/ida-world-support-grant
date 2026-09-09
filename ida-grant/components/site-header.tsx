@@ -52,9 +52,6 @@ export function SiteHeader() {
           <Link href="/grants" className="hidden items-center gap-2 rounded-md border border-[#005ea8] px-3 py-2.5 text-[12px] font-bold text-[#005ea8] hover:bg-[#eaf1f5] sm:inline-flex">
             <Search size={15} /> Search grants
           </Link>
-          <Link href="/apply" className="hidden items-center gap-2 rounded-md bg-[#005ea8] px-4 py-2.5 text-[12px] font-bold text-white shadow-sm hover:bg-[#004b87] sm:inline-flex">
-            Apply now <ArrowRight size={14}/>
-          </Link>
 
           <button
             type="button"
@@ -101,6 +98,14 @@ export function SiteHeader() {
           </div>
         )}
       </header>
+
+      <Link
+        href="/apply"
+        aria-label="Apply now"
+        className="fixed bottom-5 right-5 z-50 inline-flex items-center gap-2 rounded-full bg-[#005EA8] px-5 py-3.5 text-sm font-extrabold text-white shadow-[0_8px_24px_rgba(11,45,69,0.22)] ring-2 ring-white transition hover:bg-[#004B87] focus:outline-none focus:ring-2 focus:ring-[#005EA8] focus:ring-offset-2"
+      >
+        Apply now <ArrowRight size={16} />
+      </Link>
     </>
   );
 }
