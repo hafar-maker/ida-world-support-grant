@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/client'
 
 type ChatMessage = { id: string; message: string; sender_id: string | null; sender_role: 'applicant' | 'agent' | 'admin'; created_at: string }
 
-export function ChatPanel({ applicationId, applicantName, staff = false }: { applicationId?: string; applicantName?: string; staff?: boolean }) {
+export function ChatPanel({ applicationId, applicantName, applicantEmail, staff = false }: { applicationId?: string; applicantName?: string; applicantEmail?: string; staff?: boolean }) {
   const supabase = createClient()
   const [threadId, setThreadId] = useState('')
   const [messages, setMessages] = useState<ChatMessage[]>([])
@@ -18,6 +18,7 @@ export function ChatPanel({ applicationId, applicantName, staff = false }: { app
   const [error, setError] = useState('')
   const [notificationPermission, setNotificationPermission] = useState<NotificationPermission | 'unsupported'>('default')
   const bottomRef = useRef<HTMLDivElement>(null)
+  const publicApplicantChat = !staff && Boolean(applicantEmail)
 
   useEffect(() => {
     if (typeof window === 'undefined' || !('Notification' in window)) setNotificationPermission('unsupported')
@@ -43,19 +44,23 @@ export function ChatPanel({ applicationId, applicantName, staff = false }: { app
   async function load() {
     if (!applicationId) { setError('No application is available for chat yet.'); setLoading(false); return }
     try {
-      const response = await fetch(`/api/chat/${applicationId}`, { cache: 'no-store' })
+      const endpoint = publicApplicantChat
+        ? `/api/chat/${applicationId}?applicantEmail=${encodeURIComponent(applicantEmail || '')}`
+        : `/api/chat/${applicationId}`
+      const response = await fetch(endpoint, { cache: 'no-store' })
       const data = await response.json()
       if (!response.ok) throw new Error(data.error || 'Unable to open chat.')
-      setThreadId(data.thread_id)
-      setUserId(data.user_id)
-      if (data.role === 'agent' || data.role === 'admin' || data.role === 'applicant') setRole(data.role)
+      setThreadId(data.thread_id || '')
+      setUserId(data.user_id || '')
+      if (publicApplicantChat) setRole('applicant')
+      else if (data.role === 'agent' || data.role === 'admin' || data.role === 'applicant') setRole(data.role)
       setMessages((data.messages || []) as ChatMessage[])
       setError('')
     } catch (e) { setError(e instanceof Error ? e.message : 'Unable to open chat.') }
     finally { setLoading(false) }
   }
 
-  useEffect(() => { load() }, [applicationId])
+  useEffect(() => { load() }, [applicationId, applicantEmail, publicApplicantChat])
 
   useEffect(() => {
     if (!threadId) return
@@ -67,7 +72,7 @@ export function ChatPanel({ applicationId, applicantName, staff = false }: { app
       }).subscribe()
     const timer = window.setInterval(() => load(), 3000)
     return () => { window.clearInterval(timer); supabase.removeChannel(channel) }
-  }, [threadId, applicationId, userId, notificationPermission, staff, applicantName])
+  }, [threadId, applicationId, applicantEmail, publicApplicantChat, userId, notificationPermission, staff, applicantName])
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages.length])
 
@@ -77,7 +82,11 @@ export function ChatPanel({ applicationId, applicantName, staff = false }: { app
     if (!message || !applicationId || sending) return
     setSending(true); setError('')
     try {
-      const response = await fetch(`/api/chat/${applicationId}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message }) })
+      const response = await fetch(`/api/chat/${applicationId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(publicApplicantChat ? { message, applicantEmail } : { message }),
+      })
       const data = await response.json()
       if (!response.ok) throw new Error(data.error || 'Unable to send message.')
       setMessages(current => current.some(m => m.id === data.id) ? current : [...current, data as ChatMessage])
@@ -92,7 +101,7 @@ export function ChatPanel({ applicationId, applicantName, staff = false }: { app
     : <button type="button" onClick={enableNotifications} className="ml-auto inline-flex items-center gap-1.5 rounded-md border border-[#B8C9D4] bg-white px-2.5 py-1.5 text-[11px] font-bold text-[#005EA8] hover:bg-[#EAF1F5]"><BellOff size={13}/> Enable notifications</button>
 
   const headerTitle = staff ? applicantName || 'Applicant' : 'Grant Support Team'
-  const headerSubtitle = staff ? 'Applicant conversation · Agent support' : 'Agent support · Online'
+  const headerSubtitle = staff ? 'Applicant conversation · Agent support' : 'Applicant conversation · Agent support'
   const senderLabel = role === 'applicant' ? 'Applicant' : role === 'admin' ? 'Admin' : 'Agent'
 
   return <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
