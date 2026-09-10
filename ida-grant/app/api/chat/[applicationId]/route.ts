@@ -1,9 +1,29 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
-export async function GET(_request: Request, { params }: { params: Promise<{ applicationId: string }> }) {
+export async function GET(request: Request, { params }: { params: Promise<{ applicationId: string }> }) {
   const { applicationId } = await params
+  const url = new URL(request.url)
+  const applicantEmail = url.searchParams.get('applicantEmail')?.trim() || ''
   const supabase = await createClient()
+
+  // Applicant tracking chat uses the verified email entered on the tracking page.
+  // This keeps an existing Agent/Admin browser session from accidentally becoming the applicant.
+  if (applicantEmail) {
+    const { data, error } = await supabase.rpc('get_public_chat', {
+      p_application_id: applicationId,
+      p_email: applicantEmail,
+    })
+    if (error) return NextResponse.json({ error: error.message || 'Unable to open chat.' }, { status: 400 })
+    const rows = (data || []) as Array<{ thread_id: string; user_id: string; role: string; id: string; message: string; sender_id: string | null; sender_role: string; created_at: string }>
+    return NextResponse.json({
+      thread_id: rows[0]?.thread_id || null,
+      messages: rows.map(({ id, message, sender_id, sender_role, created_at }) => ({ id, message, sender_id, sender_role, created_at })),
+      user_id: rows[0]?.user_id || null,
+      role: 'applicant',
+    })
+  }
+
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
 
@@ -34,9 +54,25 @@ export async function POST(request: Request, { params }: { params: Promise<{ app
   const { applicationId } = await params
   const body = await request.json().catch(() => ({}))
   const message = String(body.message || '').trim()
+  const applicantEmail = String(body.applicantEmail || '').trim()
+
   if (!message || message.length > 5000) return NextResponse.json({ error: 'Message must be between 1 and 5000 characters.' }, { status: 400 })
 
   const supabase = await createClient()
+
+  // Applicant tracking chat always writes the message as the application's applicant,
+  // even if the same browser currently has a staff session.
+  if (applicantEmail) {
+    const { data, error } = await supabase.rpc('send_public_chat', {
+      p_application_id: applicationId,
+      p_email: applicantEmail,
+      p_message: message,
+    })
+    if (error) return NextResponse.json({ error: error.message || 'Unable to send message.' }, { status: 400 })
+    const createdMessage = Array.isArray(data) ? data[0] : data
+    return NextResponse.json(createdMessage, { status: 201 })
+  }
+
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
   const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle()
