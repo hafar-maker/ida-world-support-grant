@@ -61,6 +61,15 @@ export function ChatWindow({ applicationId, applicationStatus }: { applicationId
       <div ref={bottomRef} />
     </div>
     {error && <div className="border-t bg-red-50 px-4 py-2 text-xs text-red-700">{error}</div>}
-    <div className="flex gap-2 border-t bg-white p-3"><input value={text} onChange={e => setText(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send() } }} placeholder="Message Agent…" maxLength={5000} className="min-w-0 flex-1 rounded-full border border-slate-300 px-4 py-2 text-sm outline-none focus:border-[#005EA8]"/><button onClick={send} disabled={!text.trim() || sending} className="inline-flex shrink-0 items-center gap-2 rounded-full bg-[#005EA8] px-4 py-2 text-sm font-bold text-white disabled:opacity-50"><Send size={15}/>{sending ? 'Sending' : 'Send'}</button></div>
+    <div className="border-t bg-white p-3">
+      <div className="mb-2 flex items-center justify-between px-1">
+        <span className="text-[10px] font-extrabold uppercase tracking-[0.12em] text-slate-400">Sending as</span>
+        <span className="rounded-full bg-[#D9FDD3] px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide text-[#2F6B2A]">Applicant</span>
+      </div>
+      <div className="flex gap-2">
+        <input value={text} onChange={e => setText(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send() } }} placeholder="Message Agent…" maxLength={5000} aria-label="Message as Applicant" className="min-w-0 flex-1 rounded-full border border-slate-300 px-4 py-2 text-sm outline-none focus:border-[#005EA8]"/>
+        <button onClick={send} disabled={!text.trim() || sending} className="inline-flex shrink-0 items-center gap-2 rounded-full bg-[#005EA8] px-4 py-2 text-sm font-bold text-white disabled:opacity-50" aria-label="Send message as Applicant"><Send size={15}/>{sending ? 'Sending' : 'Send'}</button>
+      </div>
+    </div>
   </div>
 }
