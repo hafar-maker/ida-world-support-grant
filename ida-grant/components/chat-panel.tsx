@@ -92,7 +92,8 @@ export function ChatPanel({ applicationId, applicantName, staff = false }: { app
     : <button type="button" onClick={enableNotifications} className="ml-auto inline-flex items-center gap-1.5 rounded-md border border-[#B8C9D4] bg-white px-2.5 py-1.5 text-[11px] font-bold text-[#005EA8] hover:bg-[#EAF1F5]"><BellOff size={13}/> Enable notifications</button>
 
   const headerTitle = staff ? applicantName || 'Applicant' : 'Grant Support Team'
-  const headerSubtitle = staff ? 'Applicant conversation · Agent / Admin' : 'Agent or Admin support · Online'
+  const headerSubtitle = staff ? 'Applicant conversation · Agent support' : 'Agent support · Online'
+  const senderLabel = role === 'applicant' ? 'Applicant' : role === 'admin' ? 'Admin' : 'Agent'
 
   return <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
     <div className="flex items-center gap-3 border-b bg-white px-5 py-4">
@@ -105,7 +106,7 @@ export function ChatPanel({ applicationId, applicantName, staff = false }: { app
       {loading ? <div className="py-12 text-center text-sm text-slate-500">Opening chat…</div> : messages.length ? messages.map(m => {
         const isApplicantMessage = m.sender_role === 'applicant'
         const alignRight = isApplicantMessage
-        const label = isApplicantMessage ? (staff ? 'Applicant' : 'You') : (m.sender_role === 'admin' ? 'Admin' : 'Agent')
+        const label = isApplicantMessage ? 'Applicant' : (m.sender_role === 'admin' ? 'Admin' : 'Agent')
         return <div key={m.id} className={`mb-3 flex w-full ${alignRight ? 'justify-end' : 'justify-start'}`}>
           <div className={`max-w-[78%] sm:max-w-[68%] ${alignRight ? 'items-end' : 'items-start'} flex flex-col`}>
             <div className={`mb-1 px-1 text-[10px] font-bold uppercase tracking-wide ${alignRight ? 'text-slate-500' : 'text-[#005EA8]'}`}>{label}</div>
@@ -122,9 +123,15 @@ export function ChatPanel({ applicationId, applicantName, staff = false }: { app
       <div ref={bottomRef}/>
     </div>
 
-    <form onSubmit={send} className="flex items-center gap-2 border-t bg-[#F8FAFB] p-3">
-      <input value={text} onChange={e=>setText(e.target.value)} maxLength={5000} placeholder={staff ? 'Reply to applicant…' : 'Message Agent or Admin…'} className="min-w-0 flex-1 rounded-full border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-[#005EA8] focus:ring-2 focus:ring-[#005EA8]/10"/>
-      <button disabled={!text.trim()||sending||loading} className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-[#005EA8] text-white disabled:opacity-50" aria-label="Send message"><Send size={17}/></button>
+    <form onSubmit={send} className="border-t bg-[#F8FAFB] p-3">
+      <div className="mb-2 flex items-center justify-between px-1">
+        <span className="text-[10px] font-extrabold uppercase tracking-[0.12em] text-slate-400">Sending as</span>
+        <span className={`rounded-full px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide ${role === 'applicant' ? 'bg-[#D9FDD3] text-[#2F6B2A]' : 'bg-[#EAF1F5] text-[#005EA8]'}`}>{senderLabel}</span>
+      </div>
+      <div className="flex items-center gap-2">
+        <input value={text} onChange={e=>setText(e.target.value)} maxLength={5000} placeholder={role === 'applicant' ? 'Message Agent…' : role === 'admin' ? 'Reply to applicant as Admin…' : 'Reply to applicant as Agent…'} aria-label={`Message as ${senderLabel}`} className="min-w-0 flex-1 rounded-full border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-[#005EA8] focus:ring-2 focus:ring-[#005EA8]/10"/>
+        <button disabled={!text.trim()||sending||loading} className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-[#005EA8] text-white disabled:opacity-50" aria-label={`Send message as ${senderLabel}`}><Send size={17}/></button>
+      </div>
     </form>
     {error&&<div className="border-t bg-red-50 px-4 py-3 text-xs text-red-700">{error}</div>}
   </section>
