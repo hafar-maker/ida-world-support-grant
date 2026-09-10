@@ -16,19 +16,11 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   if (error) return NextResponse.json({ error: error.message }, { status: 404 })
   if (profile.role === 'applicant' && data.applicant_id !== user.id) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
-  if (profile.role === 'agent') {
-    return NextResponse.json({
-      id: data.id,
-      application_number: data.application_number,
-      applicant_id: data.applicant_id,
-      full_name: data.full_name,
-      email: data.email,
-      phone: data.phone,
-      country: data.applicant_id ? (await supabase.from('profiles').select('country').eq('id', data.applicant_id).maybeSingle()).data?.country : null,
-    })
-  }
+  const { data: applicantProfile } = data.applicant_id
+    ? await supabase.from('profiles').select('country').eq('id', data.applicant_id).maybeSingle()
+    : { data: null }
 
-  return NextResponse.json(data)
+  return NextResponse.json({ ...data, country: applicantProfile?.country ?? null })
 }
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
